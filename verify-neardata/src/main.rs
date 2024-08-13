@@ -6,6 +6,7 @@ use fastnear_primitives::near_primitives::types::BlockHeight;
 use reqwest::Client;
 use std::collections::HashMap;
 use std::env;
+use std::io::Write;
 use std::time::Duration;
 
 const URL: &str = "http://localhost:3005";
@@ -66,6 +67,13 @@ async fn main() {
 
     let mut data_ids = HashMap::new();
     let mut prev_block_hash = None;
+    let log_file = format!(
+        "/tmp/verify_neardata_{}_{}.log",
+        starting_block_height, last_block_height
+    );
+    let mut f = std::fs::File::create(&log_file).expect("Unable to create file");
+    println!("Created file: {}", log_file);
+
     for block_height in starting_block_height..=last_block_height {
         let block = fetch_block_by_height(&client, block_height, DEFAULT_TIMEOUT).await;
         if block.is_none() {
@@ -95,14 +103,22 @@ async fn main() {
                         ReceiptEnumView::Action { .. } => {
                             // skipping here, since we'll get one with execution
                         }
-                        ReceiptEnumView::Data { data_id, .. } => {
-                            if let Some(other_id) =
-                                data_ids.insert(data_id, receipt.receipt_id.clone())
+                        ReceiptEnumView::Data {
+                            data_id,
+                            data,
+                            is_promise_resume,
+                        } => {
+                            if let Some((other_receipt_id, other_data)) =
+                                data_ids.insert(data_id, (receipt.receipt_id, data))
                             {
-                                panic!(
-                                    "Data id {} is already present at block height {}. Receipt ids: {} and {}",
-                                    data_id, block_height, receipt.receipt_id, other_id
+                                let (new_receipt_id, new_data) = data_ids.get(&data_id).unwrap();
+                                let s = format!(
+                                    "Data id {} is already present at block height {}. Receipt ids: {} and {}. Data is {:?}. Is promise resume: {}",
+                                    data_id, block_height, new_receipt_id, other_receipt_id, new_data == &other_data, is_promise_resume
                                 );
+                                eprintln!("{}", s);
+                                f.write(s.as_bytes()).expect("Unable to write to file");
+                                f.write(b"\n").expect("Unable to write to file");
                             }
                         }
                     }
@@ -121,4 +137,6 @@ async fn main() {
         prev_block_hash = Some(block_hash);
     }
     println!("All blocks are verified");
+    f.flush().expect("Unable to flush file");
+    println!("Saved log file: {}", log_file);
 }
