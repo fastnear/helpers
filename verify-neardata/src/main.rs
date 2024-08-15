@@ -113,7 +113,7 @@ async fn main() {
                             {
                                 let (new_receipt_id, new_data) = data_ids.get(&data_id).unwrap();
                                 let s = format!(
-                                    "Data id {} is already present at block height {}. Receipt ids: {} and {}. Data is {:?}. Is promise resume: {}",
+                                    "Data id {} is already present at block height {} Receipt ids: {} and {} Data matching: {:?}. Is promise resume: {}",
                                     data_id, block_height, new_receipt_id, other_receipt_id, new_data == &other_data, is_promise_resume
                                 );
                                 eprintln!("{}", s);
