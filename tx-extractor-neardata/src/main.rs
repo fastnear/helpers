@@ -89,7 +89,7 @@ async fn main() {
         .height;
 
     let last_block_height = args
-        .get(1)
+        .get(2)
         .map(|arg| arg.parse().expect("Invalid block height"))
         .unwrap_or(last_block_height);
 
