@@ -10,6 +10,7 @@ license = "MIT OR Apache-2.0"
 resolver = "2"
 members = [
     "verify-neardata",
+    "tx-extractor-neardata",
 ]
 
 [workspace.dependencies]
