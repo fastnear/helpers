@@ -60,6 +60,9 @@ async fn main() {
     openssl_probe::init_ssl_cert_env_vars();
     dotenv().ok();
 
+    // Check if res exists
+    std::fs::create_dir_all("res").expect("Unable to create directory");
+
     let args: Vec<String> = env::args().collect();
 
     let starting_block_height = args
@@ -139,6 +142,10 @@ async fn main() {
         prev_block_hash = Some(block_hash);
     }
     println!("All blocks are executed");
+    if tx_hashes.len() >= TX_FILE_LIMIT {
+        write_tx_hashes(&tx_hashes, tx_block_height_start, last_block_height);
+    }
+
     f.flush().expect("Unable to flush file");
     println!("Saved log file: {}", log_file);
 }
