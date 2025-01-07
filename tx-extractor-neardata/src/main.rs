@@ -61,7 +61,7 @@ async fn main() {
     dotenv().ok();
 
     // Check if res exists
-    std::fs::create_dir_all("res").expect("Unable to create directory");
+    std::fs::create_dir_all("res/hashes").expect("Unable to create directory");
 
     let args: Vec<String> = env::args().collect();
 
