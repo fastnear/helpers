@@ -6,7 +6,6 @@ use fastnear_primitives::near_primitives::types::BlockHeight;
 use reqwest::Client;
 use std::collections::HashMap;
 use std::env;
-use std::fmt::format;
 use std::io::Write;
 use std::time::Duration;
 
