@@ -142,7 +142,7 @@ async fn main() {
         prev_block_hash = Some(block_hash);
     }
     println!("All blocks are executed");
-    if tx_hashes.len() >= TX_FILE_LIMIT {
+    if tx_hashes.len() > 0 {
         write_tx_hashes(&tx_hashes, tx_block_height_start, last_block_height);
     }
 
