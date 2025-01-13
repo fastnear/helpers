@@ -6,6 +6,7 @@ use fastnear_primitives::near_primitives::types::BlockHeight;
 use reqwest::Client;
 use std::collections::HashMap;
 use std::env;
+use std::fmt::format;
 use std::io::Write;
 use std::time::Duration;
 
@@ -74,6 +75,10 @@ async fn main() {
     let mut f = std::fs::File::create(&log_file).expect("Unable to create file");
     println!("Created file: {}", log_file);
 
+    std::fs::create_dir_all("res").expect("Unable to create directory");
+    let mut f_bad_shard_id_blocks =
+        std::fs::File::create("res/bad_shard_id_blocks.txt").expect("Unable to create file");
+
     for block_height in starting_block_height..=last_block_height {
         let block = fetch_block_by_height(&client, block_height, DEFAULT_TIMEOUT).await;
         if block.is_none() {
@@ -96,8 +101,23 @@ async fn main() {
                 block.block.header.height
             );
         }
+        let mut bad_shard_id = false;
         for shard in block.shards {
             if let Some(chunk) = shard.chunk {
+                if !bad_shard_id && shard.shard_id != chunk.header.shard_id {
+                    bad_shard_id = true;
+                    let s = format!(
+                        "Bad shard id at block height {}. Shard id: {} Chunk shard id: {}",
+                        block_height, shard.shard_id, chunk.header.shard_id
+                    );
+                    eprintln!("{}", s);
+                    f.write(s.as_bytes()).expect("Unable to write to file");
+                    f.write(b"\n").expect("Unable to write to file");
+
+                    f_bad_shard_id_blocks
+                        .write(format!("{}\n", block_height).as_bytes())
+                        .expect("Unable to write to bad shard id file");
+                }
                 for receipt in chunk.receipts {
                     match receipt.receipt {
                         ReceiptEnumView::Action { .. } => {
@@ -138,5 +158,6 @@ async fn main() {
     }
     println!("All blocks are verified");
     f.flush().expect("Unable to flush file");
+    f_bad_shard_id_blocks.flush().expect("Unable to flush file");
     println!("Saved log file: {}", log_file);
 }
