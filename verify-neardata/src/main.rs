@@ -65,6 +65,11 @@ async fn main() {
         .header
         .height;
 
+    let last_block_height = args
+        .get(2)
+        .map(|arg| arg.parse().expect("Invalid block height"))
+        .unwrap_or(last_block_height);
+
     let mut data_ids = HashMap::new();
     let mut prev_block_hash = None;
     let log_file = format!(
