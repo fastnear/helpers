@@ -145,6 +145,9 @@ async fn main() {
                                 f.write(b"\n").expect("Unable to write to file");
                             }
                         }
+                        ReceiptEnumView::GlobalContractDistribution { .. } => {
+                            // skipping global contract distribution receipts
+                        }
                     }
                 }
             }

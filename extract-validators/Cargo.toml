@@ -1,0 +1,20 @@
+[package]
+name = "extract-validators"
+description = "Reads data from the neardata.xyz and extracts validators info into a csv file"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+dotenv.workspace = true
+openssl-probe.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+fastnear-primitives.workspace = true
+fastnear-neardata-fetcher.workspace = true
+ctrlc.workspace = true
