@@ -1,5 +1,6 @@
 use dotenv::dotenv;
-use fastnear_neardata_fetcher::{fetcher, FetcherConfig};
+use fastnear_neardata_fetcher::{fetcher, FetcherConfig, FetcherConfigBuilder};
+use fastnear_primitives::near_indexer_primitives::types::BlockHeight;
 use fastnear_primitives::types::ChainId;
 use std::env;
 use std::io::Write;
@@ -14,12 +15,12 @@ async fn main() {
 
     let args: Vec<String> = env::args().collect();
 
-    let start_block_height = args
+    let start_block_height: BlockHeight = args
         .get(1)
         .map(|arg| arg.parse().expect("Invalid block height"))
         .expect("Start block height is required");
 
-    let end_block_height = args
+    let end_block_height: BlockHeight = args
         .get(2)
         .map(|arg| arg.parse().expect("Invalid block height"))
         .expect("End block height is required");
@@ -47,18 +48,17 @@ async fn main() {
     })
     .expect("Error setting Ctrl+C handler");
 
+    let mut config = FetcherConfigBuilder::new()
+        .num_threads(num_threads)
+        .start_block_height(start_block_height)
+        .chain_id(ChainId::Mainnet);
+    if let Some(token) = auth_bearer_token.clone() {
+        config = config.auth_bearer_token(token);
+    }
+
     let (sender, mut receiver) = mpsc::channel(320);
     tokio::spawn(fetcher::start_fetcher(
-        None,
-        FetcherConfig {
-            num_threads,
-            start_block_height,
-            chain_id: ChainId::Mainnet,
-            timeout_duration: None,
-            retry_duration: None,
-            disable_archive_sync: false,
-            auth_bearer_token,
-        },
+        config.build(),
         sender,
         is_running.clone(),
     ));
