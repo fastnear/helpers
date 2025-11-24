@@ -1,0 +1,23 @@
+[package]
+name = "convert-blocks"
+description = "Reads downloaded Lake blocks from a given folder, then download blocks from Neardata, to replace cause section of each chunk"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+dotenv.workspace = true
+openssl-probe.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+fastnear-primitives.workspace = true
+fastnear-neardata-fetcher.workspace = true
+ctrlc.workspace = true
+flate2.workspace = true
+tar.workspace = true

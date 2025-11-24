@@ -1,10 +1,11 @@
 use dotenv::dotenv;
 use fastnear_neardata_fetcher::fetcher::{fetch_block_until_success, DEFAULT_TIMEOUT};
 use fastnear_primitives::block_with_tx_hash::BlockWithTxHashes;
-use fastnear_primitives::near_indexer_primitives::views::ReceiptEnumView;
+use fastnear_primitives::near_indexer_primitives::views::{ReceiptEnumView, StateChangeCauseView};
+use fastnear_primitives::near_indexer_primitives::CryptoHash;
 use fastnear_primitives::near_primitives::types::BlockHeight;
 use reqwest::Client;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::io::Write;
 use std::time::Duration;
@@ -106,6 +107,7 @@ async fn main() {
             );
         }
         let mut bad_shard_id = false;
+        let mut tx_causes: HashSet<CryptoHash> = HashSet::new();
         for shard in block.shards {
             if let Some(chunk) = shard.chunk {
                 if !bad_shard_id && shard.shard_id != chunk.header.shard_id {
@@ -157,6 +159,21 @@ async fn main() {
                         "Tx hash is none at block height {} for receipt id {}",
                         block_height, outcome.receipt.receipt_id
                     );
+                }
+            }
+
+            for state_change in shard.state_changes {
+                match state_change.cause {
+                    StateChangeCauseView::TransactionProcessing { tx_hash } => {
+                        if !tx_causes.insert(tx_hash) {
+                            let s = format!(
+                                "Duplicate transaction processing cause for tx hash {:?} at block height {}",
+                                tx_hash, block_height
+                            );
+                            panic!("{}", s);
+                        }
+                    }
+                    _ => continue,
                 }
             }
         }
