@@ -1,9 +1,8 @@
 use dotenv::dotenv;
-use fastnear_neardata_fetcher::{fetcher, FetcherConfig, FetcherConfigBuilder};
+use fastnear_neardata_fetcher::{fetcher, FetcherConfigBuilder};
 use fastnear_primitives::block_with_tx_hash::BlockWithTxHashes;
 use fastnear_primitives::near_indexer_primitives::types::BlockHeight;
 use fastnear_primitives::types::ChainId;
-use std::io::Write;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{env, fs};

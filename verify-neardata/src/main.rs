@@ -3,9 +3,10 @@ use fastnear_neardata_fetcher::fetcher::{fetch_block_until_success, DEFAULT_TIME
 use fastnear_primitives::block_with_tx_hash::BlockWithTxHashes;
 use fastnear_primitives::near_indexer_primitives::views::{ReceiptEnumView, StateChangeCauseView};
 use fastnear_primitives::near_indexer_primitives::CryptoHash;
-use fastnear_primitives::near_primitives::types::BlockHeight;
+use fastnear_primitives::near_primitives::types::{AccountId, BlockHeight};
+use fastnear_primitives::utils::state_change_account_id;
 use reqwest::Client;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::env;
 use std::io::Write;
 use std::time::Duration;
@@ -107,7 +108,7 @@ async fn main() {
             );
         }
         let mut bad_shard_id = false;
-        let mut tx_causes: HashSet<CryptoHash> = HashSet::new();
+        let mut tx_causes: HashMap<CryptoHash, AccountId> = HashMap::new();
         for shard in block.shards {
             if let Some(chunk) = shard.chunk {
                 if !bad_shard_id && shard.shard_id != chunk.header.shard_id {
@@ -163,14 +164,18 @@ async fn main() {
             }
 
             for state_change in shard.state_changes {
+                let account_id = state_change_account_id(&state_change.value).clone();
                 match state_change.cause {
                     StateChangeCauseView::TransactionProcessing { tx_hash } => {
-                        if !tx_causes.insert(tx_hash) {
-                            let s = format!(
-                                "Duplicate transaction processing cause for tx hash {:?} at block height {}",
-                                tx_hash, block_height
-                            );
-                            panic!("{}", s);
+                        if let Some(old_account_id) = tx_causes.insert(tx_hash, account_id.clone())
+                        {
+                            if old_account_id != account_id {
+                                let s = format!(
+                                    "Different account ids for tx hash {:?} at block height {}: {:?} and {:?}",
+                                    tx_hash, block_height, old_account_id, account_id
+                                );
+                                panic!("{}", s);
+                            }
                         }
                     }
                     _ => continue,
