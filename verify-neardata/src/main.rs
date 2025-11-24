@@ -6,7 +6,7 @@ use fastnear_primitives::near_indexer_primitives::CryptoHash;
 use fastnear_primitives::near_primitives::types::{AccountId, BlockHeight};
 use fastnear_primitives::utils::state_change_account_id;
 use reqwest::Client;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::io::Write;
 use std::time::Duration;
@@ -109,6 +109,7 @@ async fn main() {
         }
         let mut bad_shard_id = false;
         let mut tx_causes: HashMap<CryptoHash, AccountId> = HashMap::new();
+        let mut expected_tx_hashes_with_causes: HashSet<CryptoHash> = HashSet::new();
         for shard in block.shards {
             if let Some(chunk) = shard.chunk {
                 if !bad_shard_id && shard.shard_id != chunk.header.shard_id {
@@ -153,6 +154,10 @@ async fn main() {
                         }
                     }
                 }
+                // Expected transaction state changes
+                for tx in chunk.transactions {
+                    expected_tx_hashes_with_causes.insert(tx.transaction.hash);
+                }
             }
             for outcome in shard.receipt_execution_outcomes {
                 if outcome.tx_hash.is_none() {
@@ -177,10 +182,18 @@ async fn main() {
                                 panic!("{}", s);
                             }
                         }
+                        expected_tx_hashes_with_causes.remove(&tx_hash);
                     }
                     _ => continue,
                 }
             }
+        }
+        if !expected_tx_hashes_with_causes.is_empty() {
+            let s = format!(
+                "Missing state changes for tx hashes {:?} at block height {}",
+                expected_tx_hashes_with_causes, block_height
+            );
+            panic!("{}", s);
         }
 
         prev_block_hash = Some(block_hash);

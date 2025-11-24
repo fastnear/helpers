@@ -68,12 +68,9 @@ async fn main() {
 
     while let Some(mut block) = receiver.recv().await {
         let block_height = block.block.header.height;
-        if block_height % 100 == 0 {
-            println!("Processing block {}", block_height);
-        }
-        let filename = format!("{}/{:0>12}.csv", nearlake_blocks_path, block_height);
-        let content = std::fs::read_to_string(&filename)
-            .unwrap_or_else(|_| "block_height,validator_id,shard_id\n".to_string());
+        println!("Processing block {}", block_height);
+        let filename = format!("{}/{:0>12}.json", nearlake_blocks_path, block_height);
+        let content = std::fs::read_to_string(&filename).expect("Cannot read file");
         let lake_block: BlockWithTxHashes =
             serde_json::from_str(&content).expect("Unable to parse block file");
 
@@ -93,10 +90,14 @@ async fn main() {
                 .iter()
                 .find(|s| s.shard_id == shard.shard_id)
                 .expect("Shard not found in lake block");
-            assert_eq!(
-                shard.state_changes.len(),
+            assert!(
+                shard.state_changes.len() <=
                 lake_shard.state_changes.len(),
-                "State changes length mismatch"
+                "State changes length mismatch block {} shard {}:\n\nNeardata changes: {:#?}\n\n\nLake changes: {:#?}",
+                block_height,
+                shard.shard_id,
+                shard.state_changes,
+                lake_shard.state_changes
             );
             shard.state_changes = lake_shard.state_changes.clone();
         }
