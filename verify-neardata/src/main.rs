@@ -126,7 +126,7 @@ async fn main() {
                         .write(format!("{}\n", block_height).as_bytes())
                         .expect("Unable to write to bad shard id file");
                 }
-                for receipt in chunk.receipts {
+                for receipt in chunk.local_receipts.into_iter().chain(chunk.receipts) {
                     match receipt.receipt {
                         ReceiptEnumView::Action { .. } => {
                             // skipping here, since we'll get one with execution
@@ -165,6 +165,19 @@ async fn main() {
                         "Tx hash is none at block height {} for receipt id {}",
                         block_height, outcome.receipt.receipt_id
                     );
+                }
+
+                match outcome.receipt.receipt {
+                    ReceiptEnumView::Action { refund_to, .. } => {
+                        if let Some(refund_to) = refund_to {
+                            eprintln!(
+                                "Refund receipt found at block height {} Refund to: {}",
+                                block_height, refund_to
+                            );
+                        }
+                    }
+                    ReceiptEnumView::Data { .. } => {}
+                    ReceiptEnumView::GlobalContractDistribution { .. } => {}
                 }
             }
 
